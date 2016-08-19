@@ -25,32 +25,38 @@ def get_port():
                 pass
     return port
 
+# dng_device = ts_api.TSDongle(com_port=get_port())
 dng_device = ts_api.TSDongle(com_port=get_port())
+# for i in dng_device:
+#     print i
+dng_device = filter(None,dng_device)
 # device = ts_api.TSWLSensor(com_port=get_port())
 device0 = dng_device[0]
-device1 = dng_device[1]
-
+# device1 = dng_device[1]
+# device2 = dng_device[2]
+# device0 = ts_api.TSWLSensor(com_port=get_port())
 ## If a connection to the COM port fails, None is returned.
 if device0 is not None:
     cont = 0
     print(device0)
-    print(device1)
+    # print(device1)
     device0.setStreamingTiming(0,0,1000000,True)
     ## Set the stream slots for getting the tared orientation of the device as a
     ## quaternion, the raw component data, and the button state
     device0.setStreamingSlots(   slot0='getTaredOrientationAsEulerAngles',
                                 slot1='getNormalizedGyroRate')
-    device1.setStreamingTiming(0,0,1000000,True)
-    ## Set the stream slots for getting the tared orientation of the device as a
-    ## quaternion, the raw component data, and the button state
-    device1.setStreamingSlots(   slot0='getButtonState')
+    # device1.setStreamingTiming(0,0,1000000,True)
+    # device2.setStreamingTiming(0,0,1000000,True)
+    # device1.setStreamingSlots(   slot0='getButtonState')
+    # device2.setStreamingSlots(   slot0='getButtonState')
 
     ## Now we can start getting the streaming batch data from the device.
     print("==================================================")
     print("Getting the streaming batch data.")
     start_time = time.time()
     device0.startStreaming()
-    device1.startStreaming()
+    # device1.startStreaming()
+    # device2.startStreaming()
     # device0.startRecordingData()
     old_time = 0
     new_time = 0
@@ -61,7 +67,7 @@ if device0 is not None:
     # cont = 0
     # start_time = time.time()
     data0 = 0
-    data1 = 0
+    # data1 = 0
     while time.time() - start_time < 1:
         # print device.stream_last_data
         # print device.getLatestStreamData(1000)
@@ -69,7 +75,9 @@ if device0 is not None:
         # print("=======================================\n")
         # raw_input('go')
         data0 = device0.getStreamingBatch(True)
-        data1 = device1.getStreamingBatch(True)
+        # print data0
+        # data1 = device1.getStreamingBatch(True)
+        # data2 = device1.getStreamingBatch(True)
         new_time = data0[1]
         if not new_time == old_time:
             # print '0: ',data0
@@ -87,9 +95,11 @@ if device0 is not None:
     print 'cont: ',cont
     # device0.stopRecordingData()
     device0.stopStreaming()
-    device1.stopStreaming()
+    # device1.stopStreaming()
+    # device2.stopStreaming()
     device0.close()
-    device1.close()
+    # device1.close()
+    # device2.close()
 
 
 
