@@ -4,8 +4,10 @@
 import threespace_api as ts_api
 import time
 import serial
+import struct
+import math
 
-time_to_count = 1
+time_to_count = 20
 
 def read_data(serial_port):
     start_time = time.time()
@@ -16,7 +18,49 @@ def read_data(serial_port):
         bytes_to_read = serial_port.inWaiting()
         if bytes_to_read > 0:
             data = bytearray(serial_port.read(bytes_to_read))
-            # print()
+
+            x = ''.join(chr(i) for i in data[8:12]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            x = struct.unpack('>f', x)
+            x = x[0]
+
+            y = ''.join(chr(i) for i in data[12:16]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            y = struct.unpack('>f', y)
+            y = y[0]
+
+            z = ''.join(chr(i) for i in data[16:20]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            z = struct.unpack('>f', z)
+            z = z[0]
+
+            accelx = ''.join(chr(i) for i in data[32:36]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            accelx = struct.unpack('>f', accelx)
+            accelx = accelx[0]
+
+            accely = ''.join(chr(i) for i in data[36:40]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            accely = struct.unpack('>f', accely)
+            accely = accely[0]
+
+            accelz = ''.join(chr(i) for i in data[40:44]) # angle y
+            # b = ''.join(chr(i) for i in data[24:28]) # gyro y
+            accelz = struct.unpack('>f', accelz)
+            accelz = accelz[0]
+
+            # print(x,y,z,accelx,accely,accelz)
+            ang = y/math.pi*180
+            # if accelz < 0 and ang >= 0:
+            #     ang = ang + 2*(90 - ang)
+            if ang<0:
+                ang = 360+ang
+                if accelz < 0:
+                    ang = ang - 2*(ang - 270)
+            else:
+                if accelz < 0:
+                    ang = ang + 2*(90 - ang)
+            print(ang)
             if data[6] == 1:
                 count1 = count1 + 1
             elif data[6] == 2:
@@ -25,9 +69,7 @@ def read_data(serial_port):
                 count0 = count2 + 1
             # print("data:")
             # print ":".join(hex(c) for c in data)
-            # print(data.decode())
-        # else:
-            # print "no data"
+        # time.sleep(0.5)
     freq0 = count0/time_to_count
     freq1 = count1/time_to_count
     freq2 = count2/time_to_count
@@ -45,7 +87,7 @@ def read_data(serial_port):
 ## Only one 3-Space Sensor Dongle device is needed so we are just going to
 ## take the first one from the list.
 # com_port = device_list[0]
-port = '/dev/tty.usbmodemFD121'
+port = '/dev/tty.usbmodemFA131'
 dng_device = ts_api.TSDongle(com_port=port)
 
 ## If a connection to the COM port fails, None is returned.
@@ -54,32 +96,41 @@ if dng_device is not None:
     ## Indexing into the TSDongle instance like it was a list will return a
     ## TSWLSensor instance.
     wl_device = dng_device[1]
-    wl_device2 = dng_device[2]
-    wl_device3 = dng_device[0]
+    # wl_device2 = dng_device[2]
+    # wl_device3 = dng_device[0]
 
     ## Set the stream slots for getting the tared orientation of the device as a
     ## quaternion, the raw component data, and the button state
-    wl_device.setFilterMode(0) # 1 is Kalman (Default), 0 is no filter
+    wl_device.setEulerAngleDecompositionOrder(3)
+    wl_device.tareWithCurrentOrientation()
+    wl_device.setFilterMode(1) # 1 is Kalman (Default), 0 is no filter
     wl_device.setStreamingTiming(interval=0,delay=0,duration=time_to_count*1000000,timestamp=False)
-    wl_device.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
+    wl_device.setStreamingSlots(slot0='getTaredOrientationAsEulerAngles',
                                 slot1='getNormalizedGyroRate',
-                                slot2='getButtonState')
+                                slot2='getNormalizedAccelerometerVector')
+    # wl_device.setStreamingSlots(slot0='getUntaredOrientationAsEulerAngles',
+    #                             slot1='getNormalizedGyroRate')
+    # wl_device.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
+    #                             slot1='getNormalizedGyroRate')
+    wl_device.tareWithCurrentOrientation()
+    #                             slot2='getButtonState')
     # wl_device.setStreamingSlots(slot0='getButtonState')
 
 
     # wl_device.stopStreaming()
     # dng_device.close()
     # wl_device2.setFilterMode(1) # 1 is Kalman (Default), 0 is no filter
-    wl_device2.setStreamingTiming(interval=0,delay=0,duration=time_to_count*1000000,timestamp=False)
-    wl_device2.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
-                                slot1='getNormalizedGyroRate',
-                                slot2='getButtonState')
-    # wl_device.setStreamingSlots(slot0='getButtonState')
+    # wl_device2.setStreamingTiming(interval=0,delay=0,duration=time_to_count*1000000,timestamp=False)
+    # wl_device2.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
+    #                             slot1='getNormalizedGyroRate',
+    #                             slot2='getButtonState')
+    # wl_device2.setStreamingSlots(slot0='getButtonState')
 
-    wl_device3.setStreamingTiming(interval=0,delay=0,duration=time_to_count*1000000,timestamp=False)
-    wl_device3.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
-                                slot1='getNormalizedGyroRate',
-                                slot2='getButtonState')
+    # wl_device3.setStreamingTiming(interval=0,delay=0,duration=time_to_count*1000000,timestamp=False)
+    # wl_device3.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
+    #                             slot1='getNormalizedGyroRate',
+    #                             slot2='getButtonState')
+    # wl_device3.setStreamingSlots(slot0='getButtonState')
 
     wl_device.startStreaming(False)
     # wl_device2.startStreaming(False)
@@ -100,7 +151,6 @@ if dng_device is not None:
     while time.time() - start_time < 1:
         # print(time.clock() - start_time)
         print(wl_device.getStreamingBatch(True))
-        print(dng_device._getMa)
         print("=======================================\n")
         time.sleep(0.1)
 
